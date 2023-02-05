@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <string>
 #include <time.h>
 #include <sys/time.h>
 
@@ -70,7 +71,8 @@ void checkResult(float *hostRef, float *gpuRef, const int N) {
 }
 
 int main(int argc, char **argv) {
-  int nElem = 1024 * 1024 * 64;
+  int mb = std::stoi(argv[1]);
+  int nElem = 1024 * 1024 * mb;
   size_t nBytes = nElem * sizeof(float);
 
   float *h_A, *h_B, *h_C, *gpuRef;
@@ -94,6 +96,18 @@ int main(int argc, char **argv) {
     TimerGuard guard("cpu");
     sumOnHost(h_A, h_B, h_C, nElem);
   }
+
+  CHECK(cudaMemcpy(d_A, h_A, nBytes, cudaMemcpyHostToDevice));
+  CHECK(cudaMemcpy(d_B, h_B, nBytes, cudaMemcpyHostToDevice));
+
+  {
+    TimerGuard guard("gpu");
+
+    sumOnDevice <<<grid, block>>> (d_A, d_B, d_C, nElem);
+    CHECK(cudaDeviceSynchronize());
+  }
+
+  CHECK(cudaMemcpy(gpuRef, d_C, nBytes, cudaMemcpyDeviceToHost));
 
   {
     TimerGuard guard("gpu");
