@@ -95,17 +95,17 @@ int main(int argc, char **argv) {
     sumOnHost(h_A, h_B, h_C, nElem);
   }
 
-  CHECK(cudaMemcpy(d_A, h_A, nBytes, cudaMemcpyHostToDevice));
-  CHECK(cudaMemcpy(d_B, h_B, nBytes, cudaMemcpyHostToDevice));
-
   {
     TimerGuard guard("gpu");
 
+  CHECK(cudaMemcpy(d_A, h_A, nBytes, cudaMemcpyHostToDevice));
+  CHECK(cudaMemcpy(d_B, h_B, nBytes, cudaMemcpyHostToDevice));
+
     sumOnDevice <<<grid, block>>> (d_A, d_B, d_C, nElem);
     CHECK(cudaDeviceSynchronize());
-  }
 
   CHECK(cudaMemcpy(gpuRef, d_C, nBytes, cudaMemcpyDeviceToHost));
+  }
 
   checkResult(h_C, gpuRef, nElem);
 
